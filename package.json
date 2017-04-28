@@ -1,0 +1,29 @@
+{
+  "name": "telnet-mail-test",
+  "version": "1.0.0",
+  "description": "Email verification with telnet",
+  "main": "index.js",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Goshaba/telnet-mail-test.git"
+  },
+  "keywords": [],
+  "author": "Phung Eric <superphung44@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Goshaba/telnet-mail-test/issues"
+  },
+  "homepage": "https://github.com/Goshaba/telnet-mail-test#readme",
+  "devDependencies": {
+    "@types/node": "7.0.13"
+  }
+}
