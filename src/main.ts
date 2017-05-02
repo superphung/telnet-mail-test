@@ -1,9 +1,5 @@
 import { spawn } from 'child_process';
-
-interface SmtpServer {
-  name?: string
-  message?: string
-}
+import {resolveMx} from 'dns';
 
 interface TelnetOptions {
   domain: string,
@@ -14,16 +10,19 @@ interface TelnetOptions {
 
 module.exports = function ({domain, from, to, timeout = 3000}: TelnetOptions): Promise<any> {
   return new Promise(function (resolve, reject) {
-    const lookup = spawn('nslookup', ['-type=mx', domain], {shell: true});
-    const commands = getCommands(from, to);
-    let currentCmd = 0;
 
-    lookup.stdout.on('data', (data: Object) => {
-      const domain = getSmtpserver(`${data}`);
-      if (!domain.name) {
-        return reject(domain);
+    resolveMx(domain, function (err, servers) {
+      if (err) {
+        return reject(err);
       }
-      const telnet = spawn('telnet', [domain.name, '25'], {shell: true})
+      if (servers.length === 0) {
+        return reject({message: 'no mail exchanger'});
+      }
+      const server = servers[0].exchange;
+      const commands = getCommands(from, to);
+      let currentCmd = 0;
+
+      const telnet = spawn('telnet', [server, '25'], {shell: true})
       setTimeout(() => {
         reject({message: 'timeout'})
         telnet.kill('SIGHUP');
@@ -42,11 +41,10 @@ module.exports = function ({domain, from, to, timeout = 3000}: TelnetOptions): P
           currentCmd += 1;
         }        
       });
-      telnet.stderr.on('data', data => console.log('lol', `${data}`));
+      telnet.stderr.on('data', data => console.log('stderr', `${data}`));
       telnet.stdin.on('error', reject);
       telnet.on('error', reject);
     });
-    lookup.on('error', reject);
   });
 }
 
@@ -56,19 +54,4 @@ function getCommands(from: string, to: string) {
     {pattern: '250', reply: `mail from: <${from}>\n`},
     {pattern: '250', reply: `rcpt to: <${to}>\n`}
   ];
-}
-
-function getSmtpserver(data: string): SmtpServer {
-  if (data.includes('No answer') || data.includes('server can\'t find')) {
-    return {
-      message: data
-    }; 
-  }
-  const splited = data.split('\n');
-  const index = splited.findIndex(r => r.includes('exchanger'));
-  const server = splited[index].split(' ');
-  const last = server[server.length - 1];
-  return {
-    name: last.substring(0, last.length - 1)
-  };
 }
